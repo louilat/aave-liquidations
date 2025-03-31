@@ -8,7 +8,7 @@ def get_emodes(client_s3, snapshot_date: date) -> DataFrame:
     day = date(2023, 1, 27)
     while day <= snapshot_date:
         day_str = day.strftime("%Y-%m-%d")
-        print(day_str)
+        # print(day_str)
         daily_emodes = pd.read_csv(
             client_s3.get_object(
                 Bucket="projet-datalab-group-jprat",

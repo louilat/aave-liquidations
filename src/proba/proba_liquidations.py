@@ -68,6 +68,6 @@ def compute_default_proba(
         how="left",
         on="user_address",
     )
-    users_proba["proba"] = users_proba.a / np.sqrt(users_proba.user_variance)
+    users_proba["proba"] = users_proba.a / np.sqrt(users_proba.user_variance.astype(np.float64))
 
-    return users_proba
+    return users_proba.sort_values("proba", ascending=False).reset_index()

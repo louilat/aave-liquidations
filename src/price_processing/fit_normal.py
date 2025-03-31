@@ -14,7 +14,7 @@ def preprocess_prices_for_fitting(prices: DataFrame):
     ].sort_values("Timestamp")[["Timestamp"]]
     tokens_list = prices.UnderlyingToken.unique().tolist()
     for token in tokens_list:
-        print(f"   --> Treating token {token}...")
+        print(f"      - Treating token {token}...")
         # Remove multiplicative constant + take log
         price_token = prices[prices.UnderlyingToken == token].copy()
         price_token["Time"] = pd.to_datetime(price_token.Timestamp, unit="s")
