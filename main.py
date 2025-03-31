@@ -25,7 +25,7 @@ client_s3 = get_minio_s3_client()
 snapshot_date = date(2024, 7, 1)
 maturity = 1 / 365
 bucket = "llatournerie-ensae"
-output_path = "aave-liquidations-proba/dev-jobs/output.csv"
+output_path = "aave-liquidations-proba/dev-jobs/"
 
 print("STEP 1: Extract data")
 
@@ -77,6 +77,14 @@ users_liquidation_proba = compute_default_proba(
 
 buffer = io.StringIO()
 users_liquidation_proba.to_csv(buffer, index=False)
-client_s3.put_object(Bucket=bucket, Key=output_path, Body=buffer.getvalue())
+client_s3.put_object(Bucket=bucket, Key=output_path + "probas.csv", Body=buffer.getvalue())
+
+buffer = io.StringIO()
+correlations.reset_index().to_csv(buffer, index=False)
+client_s3.put_object(Bucket=bucket, Key=output_path + "correlations.csv", Body=buffer.getvalue())
+
+buffer = io.StringIO()
+users.reset_index().to_csv(buffer, index=False)
+client_s3.put_object(Bucket=bucket, Key=output_path + "users.csv", Body=buffer.getvalue())
 
 print("Done!")
