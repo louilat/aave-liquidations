@@ -1,5 +1,7 @@
 from pandas import DataFrame
 import numpy as np
+from scipy.stats import norm
+import concurrent.futures
 
 
 def compute_user_variance(
@@ -35,16 +37,26 @@ def compute_user_variance(
         {"user_address": users_list, "user_variance": None}
     ).set_index("user_address")
 
-    for user in users_list:
-        user_balance = users_[users_.user_address == user]
-        users_variance.loc[user, "user_variance"] = (
-            _get_user_var(user_balance, prices_correlations) * delta_time
-        )
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = {executor.submit(_get_user_var, users_, u, prices_correlations): u for u in users_list}
+        
+        for future in concurrent.futures.as_completed(futures):
+            usr = futures[future]
+            user_var = future.result()
+            users_variance.loc[usr, "user_variance"] = user_var * delta_time
+            
+
+    # for user in users_list:
+    #     user_balance = users_[users_.user_address == user]
+    #     users_variance.loc[user, "user_variance"] = (
+    #         _get_user_var(user_balance, prices_correlations) * delta_time
+    #     )
 
     return users_, users_variance
 
 
-def _get_user_var(user_balance: DataFrame, prices_correlations: DataFrame) -> float:
+def _get_user_var(users_data: DataFrame, user: str, prices_correlations: DataFrame) -> float:
+    user_balance = users_data[users_data.user_address == user]
     user_var = 0
     for i, row_i in user_balance.iterrows():
         for j, row_j in user_balance.iterrows():
@@ -68,6 +80,9 @@ def compute_default_proba(
         how="left",
         on="user_address",
     )
-    users_proba["proba"] = users_proba.a / np.sqrt(users_proba.user_variance.astype(np.float64))
+    users_proba["q_value"] = users_proba.a / np.sqrt(
+        users_proba.user_variance.astype(np.float64)
+    )
+    users_proba["proba_liquidation"] = norm.cdf(users_proba.q_value)
 
-    return users_proba.sort_values("proba", ascending=False).reset_index()
+    return users_proba.sort_values("proba_liquidation", ascending=False).reset_index()
