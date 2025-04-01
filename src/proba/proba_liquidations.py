@@ -38,13 +38,15 @@ def compute_user_variance(
     ).set_index("user_address")
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = {executor.submit(_get_user_var, users_, u, prices_correlations): u for u in users_list}
-        
+        futures = {
+            executor.submit(_get_user_var, users_, u, prices_correlations): u
+            for u in users_list
+        }
+
         for future in concurrent.futures.as_completed(futures):
             usr = futures[future]
             user_var = future.result()
             users_variance.loc[usr, "user_variance"] = user_var * delta_time
-            
 
     # for user in users_list:
     #     user_balance = users_[users_.user_address == user]
@@ -55,7 +57,9 @@ def compute_user_variance(
     return users_, users_variance
 
 
-def _get_user_var(users_data: DataFrame, user: str, prices_correlations: DataFrame) -> float:
+def _get_user_var(
+    users_data: DataFrame, user: str, prices_correlations: DataFrame
+) -> float:
     user_balance = users_data[users_data.user_address == user]
     user_var = 0
     for i, row_i in user_balance.iterrows():
