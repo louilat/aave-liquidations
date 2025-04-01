@@ -1,9 +1,10 @@
 """Main ETL"""
 
-from datetime import date
+from datetime import date, timedelta
 import io
 import warnings
-warnings.filterwarnings(action='ignore')
+
+warnings.filterwarnings(action="ignore")
 
 from src.utils.minio import get_minio_s3_client
 from src.data.user_balance import get_users_snapshot
@@ -22,7 +23,7 @@ client_s3 = get_minio_s3_client()
 
 
 ## Parameters
-snapshot_date = date(2024, 7, 1)
+snapshot_date = date(2024, 7, 15)
 maturity = 1 / 365
 bucket = "llatournerie-ensae"
 output_path = "aave-liquidations-proba/dev-jobs/"
@@ -31,16 +32,20 @@ print("STEP 1: Extract data")
 
 
 print("   --> Users snapshot")
-raw_users = get_users_snapshot(client_s3=client_s3, snapshot_date=date(2024, 7, 1))
+raw_users = get_users_snapshot(
+    # client_s3=client_s3,
+    snapshot_date=snapshot_date
+)
 
 
 print("   --> Hourly prices")
+start_price_date = snapshot_date - timedelta(days=45)
 prices = extract_price_data(
-    client_s3=client_s3, start=date(2024, 5, 1), end=date(2024, 6, 30)
+    client_s3=client_s3, start=start_price_date, end=snapshot_date
 )
 
 print("   --> Users emodes")
-emodes = get_emodes(client_s3=client_s3, snapshot_date=date(2024, 7, 1))
+emodes = get_emodes(client_s3=client_s3, snapshot_date=snapshot_date)
 
 
 print("STEP 2: Estimate prices volatility and correlations")
@@ -77,14 +82,20 @@ users_liquidation_proba = compute_default_proba(
 
 buffer = io.StringIO()
 users_liquidation_proba.to_csv(buffer, index=False)
-client_s3.put_object(Bucket=bucket, Key=output_path + "probas.csv", Body=buffer.getvalue())
+client_s3.put_object(
+    Bucket=bucket, Key=output_path + "probas_mlt.csv", Body=buffer.getvalue()
+)
 
 buffer = io.StringIO()
 correlations.reset_index().to_csv(buffer, index=False)
-client_s3.put_object(Bucket=bucket, Key=output_path + "correlations.csv", Body=buffer.getvalue())
+client_s3.put_object(
+    Bucket=bucket, Key=output_path + "correlations.csv", Body=buffer.getvalue()
+)
 
 buffer = io.StringIO()
 users.reset_index().to_csv(buffer, index=False)
-client_s3.put_object(Bucket=bucket, Key=output_path + "users.csv", Body=buffer.getvalue())
+client_s3.put_object(
+    Bucket=bucket, Key=output_path + "users.csv", Body=buffer.getvalue()
+)
 
 print("Done!")
