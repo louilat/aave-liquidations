@@ -13,8 +13,28 @@ def clean_users(users: DataFrame, emodes: DataFrame, assets_list: list) -> DataF
         right_on="active_user_address",
     ).drop(columns="active_user_address")
 
-    users_.reserveLiquidationThreshold = np.where(
-        users_.emode == 1, 9500, users_.reserveLiquidationThreshold
+    users_.reserveLiquidationThreshold = np.select(
+        condlist=[
+            users_.emode == 0,
+            users_.emode == 1,
+            users_.emode == 2,
+            users_.emode == 3,
+            users_.emode == 4,
+            users_.emode == 5,
+            users_.emode == 6,
+            users_.emode == 7,
+        ],
+        choicelist=[
+            users_.reserveLiquidationThreshold,
+            9500,
+            9200,
+            9450,
+            8600,
+            8600,
+            8600,
+            8500,
+        ],
+        default=users_.reserveLiquidationThreshold,
     )
 
     users_["currentATokenBalanceUSD"] = (

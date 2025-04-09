@@ -2,3 +2,4 @@
 *.abi
 .env
 *.pyc
+analytics/
